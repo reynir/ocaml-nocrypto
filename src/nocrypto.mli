@@ -248,6 +248,18 @@ module Hash : sig
     val get : t -> digest
     (** [get t] is the digest corresponding to [t]. *)
 
+    (** {1 HMAC operations} *)
+
+    type hmac
+    (** Represents a running hmac computation in a way suitable for appending
+        inputs. *)
+
+    val hmac_empty : key:Cstruct.t -> hmac
+
+    val hmac_feed : hmac -> Cstruct.t -> hmac
+
+    val hmac_get : hmac -> digest
+
     (** {1 All-in-one}
 
         Functions that operate on data stored in a single chunk. *)

@@ -16,6 +16,12 @@ module type S = sig
   val feed  : t -> Cstruct.t -> t
   val get   : t -> Cstruct.t
 
+  type hmac
+
+  val hmac_empty : key:Cstruct.t -> hmac
+  val hmac_feed : hmac -> Cstruct.t -> hmac
+  val hmac_get : hmac -> digest
+
   val digest  : Cstruct.t -> digest
   val hmac    : key:Cstruct.t -> Cstruct.t -> digest
 
@@ -76,6 +82,8 @@ module Hash_of (F : Foreign) (D : Desc) = struct
 
   include Core (F) (D)
 
+  type hmac = t * Cstruct.t
+
   let opad = create ~init:0x5c block_size
   let ipad = create ~init:0x36 block_size
 
@@ -84,6 +92,18 @@ module Hash_of (F : Foreign) (D : Desc) = struct
     |  1 -> norm (digest key)
     | -1 -> rpad key block_size 0
     |  _ -> key
+
+  let hmac_empty ~key : hmac =
+    let key = norm key in
+    let outer = xor key opad
+    and inner = xor key ipad in
+    feed empty inner, outer
+
+  let hmac_feed (t, outer) cs =
+    feed t cs, outer
+
+  let hmac_get (t, outer) =
+    get (feed t outer)
 
   let hmaci ~key iter =
     let key = norm key in
